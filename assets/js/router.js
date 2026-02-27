@@ -23,13 +23,139 @@ class Router {
       mode: '',
       experience: '',
       source: '',
-      sort: 'latest'
+      sort: 'match-score',
+      showOnlyMatches: false
     };
 
     this.savedJobs = this.loadSavedJobs();
+    this.preferences = this.loadPreferences();
     this.selectedJobId = null;
 
     this.init();
+  }
+
+  /**
+   * Load preferences from localStorage
+   */
+  loadPreferences() {
+    const saved = localStorage.getItem('jobTrackerPreferences');
+    return saved ? JSON.parse(saved) : {
+      roleKeywords: [],
+      preferredLocations: [],
+      preferredMode: [],
+      experienceLevel: '',
+      skills: [],
+      minMatchScore: 40
+    };
+  }
+
+  /**
+   * Save preferences to localStorage
+   */
+  savePreferences() {
+    localStorage.setItem('jobTrackerPreferences', JSON.stringify(this.preferences));
+  }
+
+  /**
+   * Check if preferences are set
+   */
+  hasPreferences() {
+    return this.preferences.roleKeywords.length > 0 || 
+           this.preferences.preferredLocations.length > 0 || 
+           this.preferences.preferredMode.length > 0 || 
+           this.preferences.skills.length > 0 ||
+           this.preferences.experienceLevel !== '';
+  }
+
+  /**
+   * Calculate match score for a job
+   * Scoring rules:
+   * +25 if roleKeyword in job.title (case-insensitive)
+   * +15 if roleKeyword in job.description
+   * +15 if job.location matches preferredLocations
+   * +10 if job.mode matches preferredMode
+   * +10 if job.experience matches experienceLevel
+   * +15 if overlap between job.skills and user.skills
+   * +5 if postedDaysAgo <= 2
+   * +5 if source is LinkedIn
+   * Cap at 100
+   */
+  calculateMatchScore(job) {
+    let score = 0;
+
+    // +25 if any roleKeyword in job.title
+    if (this.preferences.roleKeywords.length > 0) {
+      const jobTitleLower = job.title.toLowerCase();
+      for (const keyword of this.preferences.roleKeywords) {
+        if (jobTitleLower.includes(keyword.toLowerCase())) {
+          score += 25;
+          break;
+        }
+      }
+    }
+
+    // +15 if any roleKeyword in job.description
+    if (this.preferences.roleKeywords.length > 0) {
+      const jobDescLower = job.description.toLowerCase();
+      for (const keyword of this.preferences.roleKeywords) {
+        if (jobDescLower.includes(keyword.toLowerCase())) {
+          score += 15;
+          break;
+        }
+      }
+    }
+
+    // +15 if job.location matches preferredLocations
+    if (this.preferences.preferredLocations.length > 0 && 
+        this.preferences.preferredLocations.includes(job.location)) {
+      score += 15;
+    }
+
+    // +10 if job.mode matches preferredMode
+    if (this.preferences.preferredMode.length > 0 && 
+        this.preferences.preferredMode.includes(job.mode)) {
+      score += 10;
+    }
+
+    // +10 if job.experience matches experienceLevel
+    if (this.preferences.experienceLevel && job.experience === this.preferences.experienceLevel) {
+      score += 10;
+    }
+
+    // +15 if overlap between job.skills and user.skills
+    if (this.preferences.skills.length > 0 && job.skills.length > 0) {
+      const jobSkillsLower = job.skills.map(s => s.toLowerCase());
+      const userSkillsLower = this.preferences.skills.map(s => s.toLowerCase());
+      for (const userSkill of userSkillsLower) {
+        if (jobSkillsLower.some(js => js.includes(userSkill) || userSkill.includes(js))) {
+          score += 15;
+          break;
+        }
+      }
+    }
+
+    // +5 if postedDaysAgo <= 2
+    if (job.postedDaysAgo <= 2) {
+      score += 5;
+    }
+
+    // +5 if source is LinkedIn
+    if (job.source === 'LinkedIn') {
+      score += 5;
+    }
+
+    // Cap at 100
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Get match score color badge
+   */
+  getMatchScoreBadgeColor(score) {
+    if (score >= 80) return { bg: '#E8F5E9', text: '#2E7D32', label: 'Excellent' };
+    if (score >= 60) return { bg: '#FFF8E1', text: '#F57F17', label: 'Good' };
+    if (score >= 40) return { bg: '#F5F5F5', text: '#666666', label: 'Neutral' };
+    return { bg: '#FAFAFA', text: '#CCCCCC', label: 'Low' };
   }
 
   /**
@@ -73,6 +199,12 @@ class Router {
   filterJobs() {
     let filtered = jobsDatabase.slice();
 
+    // Calculate match scores for all jobs
+    filtered = filtered.map(job => ({
+      ...job,
+      matchScore: this.calculateMatchScore(job)
+    }));
+
     // Keyword search (title or company)
     if (this.filters.keyword) {
       const keyword = this.filters.keyword.toLowerCase();
@@ -102,8 +234,15 @@ class Router {
       filtered = filtered.filter(job => job.source === this.filters.source);
     }
 
+    // Show only matches above threshold
+    if (this.filters.showOnlyMatches && this.hasPreferences()) {
+      filtered = filtered.filter(job => job.matchScore >= this.preferences.minMatchScore);
+    }
+
     // Sorting
-    if (this.filters.sort === 'latest') {
+    if (this.filters.sort === 'match-score') {
+      filtered.sort((a, b) => b.matchScore - a.matchScore);
+    } else if (this.filters.sort === 'latest') {
       filtered.sort((a, b) => a.postedDaysAgo - b.postedDaysAgo);
     } else if (this.filters.sort === 'oldest') {
       filtered.sort((a, b) => b.postedDaysAgo - a.postedDaysAgo);
@@ -136,10 +275,19 @@ class Router {
    */
   renderJobCard(job) {
     const isSaved = this.isJobSaved(job.id);
+    const badgeColor = this.getMatchScoreBadgeColor(job.matchScore || 0);
+    
     return `
-      <div data-job-id="${job.id}" style="background: #FFFFFF; border: 1px solid #E8E8E8; border-radius: 4px; padding: 24px; cursor: pointer; transition: all 200ms; display: flex; flex-direction: column; gap: 16px;">
+      <div data-job-id="${job.id}" style="background: #FFFFFF; border: 1px solid #E8E8E8; border-radius: 4px; padding: 24px; cursor: pointer; transition: all 200ms; display: flex; flex-direction: column; gap: 16px; position: relative;">
+        <!-- Match Score Badge -->
+        ${job.matchScore !== undefined ? `
+          <div style="position: absolute; top: 12px; right: 12px; background: ${badgeColor.bg}; color: ${badgeColor.text}; padding: 6px 12px; border-radius: 3px; font-size: 12px; font-family: 'Inter', sans-serif; font-weight: 600;">
+            ${job.matchScore}% Match
+          </div>
+        ` : ''}
+
         <!-- Header -->
-        <div>
+        <div style="padding-right: ${job.matchScore !== undefined ? '60px' : '0'};">
           <h3 style="font-family: 'Crimson Text', serif; font-size: 18px; margin: 0 0 8px 0; color: #111111; font-weight: 600; line-height: 1.4;">${job.title}</h3>
           <p style="margin: 0; color: #666666; font-size: 14px; font-weight: 500;">${job.company}</p>
         </div>
@@ -406,6 +554,79 @@ class Router {
       }
     });
 
+    // Preference form submission
+    const prefForm = app.querySelector('#preferences-form');
+    if (prefForm) {
+      // Handle score slider update
+      const scoreSlider = app.querySelector('#pref-min-score');
+      if (scoreSlider) {
+        scoreSlider.addEventListener('input', (e) => {
+          app.querySelector('#score-display').textContent = e.target.value + '%';
+        });
+      }
+
+      // Handle reset button
+      const resetBtn = app.querySelector('#pref-reset-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          this.preferences = {
+            roleKeywords: [],
+            preferredLocations: [],
+            preferredMode: [],
+            experienceLevel: '',
+            skills: [],
+            minMatchScore: 40
+          };
+          this.savePreferences();
+          this.renderSettings();
+        });
+      }
+
+      // Handle form submission
+      prefForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        // Collect keywords
+        const keywords = app.querySelector('#pref-keywords').value
+          .split(',')
+          .map(k => k.trim())
+          .filter(k => k.length > 0);
+
+        // Collect locations
+        const locations = Array.from(app.querySelectorAll('.pref-location:checked'))
+          .map(cb => cb.value);
+
+        // Collect modes
+        const modes = Array.from(app.querySelectorAll('.pref-mode:checked'))
+          .map(cb => cb.value);
+
+        // Get experience level
+        const experience = app.querySelector('#pref-experience').value;
+
+        // Collect skills
+        const skills = app.querySelector('#pref-skills').value
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+
+        // Get minimum score
+        const minScore = parseInt(app.querySelector('#pref-min-score').value);
+
+        // Update preferences
+        this.preferences = {
+          roleKeywords: keywords,
+          preferredLocations: locations,
+          preferredMode: modes,
+          experienceLevel: experience,
+          skills: skills,
+          minMatchScore: minScore
+        };
+
+        this.savePreferences();
+        this.navigate('/dashboard');
+      });
+    }
+
     // Filter handlers for dashboard
     const filterKeyword = app.querySelector('#filter-keyword');
     const filterLocation = app.querySelector('#filter-location');
@@ -414,6 +635,7 @@ class Router {
     const filterSource = app.querySelector('#filter-source');
     const filterSort = app.querySelector('#filter-sort');
     const clearFiltersBtn = app.querySelector('#clear-filters');
+    const showOnlyMatchesToggle = app.querySelector('#show-only-matches');
 
     if (filterKeyword) {
       filterKeyword.addEventListener('input', (e) => {
@@ -465,8 +687,16 @@ class Router {
           mode: '',
           experience: '',
           source: '',
-          sort: 'latest'
+          sort: 'match-score',
+          showOnlyMatches: false
         };
+        this.renderDashboard();
+      });
+    }
+
+    if (showOnlyMatchesToggle) {
+      showOnlyMatchesToggle.addEventListener('change', (e) => {
+        this.filters.showOnlyMatches = e.target.checked;
         this.renderDashboard();
       });
     }
@@ -509,6 +739,7 @@ class Router {
 
   renderDashboard = () => {
     const filteredJobs = this.filterJobs();
+    const hasPrefs = this.hasPreferences();
 
     return `
       <div style="padding: 40px; max-width: 1200px; margin: 0 auto;">
@@ -518,8 +749,16 @@ class Router {
           <p style="margin: 0; color: #666666; font-size: 16px;">Curated job opportunities for Indian tech professionals</p>
         </div>
 
+        ${!hasPrefs ? `
+          <!-- Preferences Banner -->
+          <div style="background: #FFF3E0; border: 1px solid #FFB74D; border-radius: 4px; padding: 16px 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <p style="margin: 0; color: #E65100; font-size: 14px; font-family: 'Inter', sans-serif;">Set your preferences to activate intelligent matching.</p>
+            <a href="/settings" data-link style="color: #E65100; text-decoration: none; font-weight: 500; font-size: 14px; font-family: 'Inter', sans-serif;">Configure Now →</a>
+          </div>
+        ` : ''}
+
         <!-- Filter Bar -->
-        <div style="background: #FFFFFF; border: 1px solid #E8E8E8; border-radius: 4px; padding: 24px; margin-bottom: 40px;">
+        <div style="background: #FFFFFF; border: 1px solid #E8E8E8; border-radius: 4px; padding: 24px; margin-bottom: 24px;">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 16px;">
             <!-- Keyword Search -->
             <input 
@@ -562,6 +801,7 @@ class Router {
 
             <!-- Sort -->
             <select id="filter-sort" style="padding: 10px 12px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px;">
+              ${hasPrefs ? `<option value="match-score" ${this.filters.sort === 'match-score' ? 'selected' : ''}>Best Match</option>` : ''}
               <option value="latest" ${this.filters.sort === 'latest' ? 'selected' : ''}>Latest First</option>
               <option value="oldest" ${this.filters.sort === 'oldest' ? 'selected' : ''}>Oldest First</option>
               <option value="salary-high" ${this.filters.sort === 'salary-high' ? 'selected' : ''}>Salary: High to Low</option>
@@ -569,19 +809,30 @@ class Router {
             </select>
           </div>
 
-          <button id="clear-filters" style="padding: 8px 16px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #666666;">Clear Filters</button>
+          <!-- Filter Controls -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <button id="clear-filters" style="padding: 8px 16px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #666666;">Clear Filters</button>
+            
+            ${hasPrefs ? `
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #666666;">
+                <input type="checkbox" id="show-only-matches" ${this.filters.showOnlyMatches ? 'checked' : ''} style="cursor: pointer;">
+                <span>Show only jobs above my threshold (${this.preferences.minMatchScore}%+)</span>
+              </label>
+            ` : ''}
+          </div>
         </div>
 
         <!-- Results Count -->
-        <p style="color: #666666; font-size: 14px; margin-bottom: 24px; margin-top: -16px;">
+        <p style="color: #666666; font-size: 14px; margin-bottom: 24px;">
           Showing ${filteredJobs.length} of ${jobsDatabase.length} jobs
         </p>
 
         ${filteredJobs.length === 0 ? `
           <!-- No Results State -->
           <div style="text-align: center; padding: 60px 24px; background: #F7F6F3; border-radius: 4px; border: 1px solid #E8E8E8;">
-            <p style="font-family: 'Crimson Text', serif; font-size: 32px; margin: 0 0 16px 0; color: #111111; font-weight: 600;">No jobs found</p>
-            <p style="margin: 0; color: #666666; font-size: 15px;">Try adjusting your filters to find more opportunities</p>
+            <p style="font-family: 'Crimson Text', serif; font-size: 32px; margin: 0 0 16px 0; color: #111111; font-weight: 600;">No roles match your criteria.</p>
+            <p style="margin: 0 0 24px 0; color: #666666; font-size: 15px;">Adjust your filters or ${hasPrefs ? 'lower your match threshold' : 'set your preferences'} to see more opportunities.</p>
+            ${!hasPrefs ? `<a href="/settings" data-link style="display: inline-block; padding: 10px 20px; background: #8B0000; color: #FFFFFF; text-decoration: none; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;">Set Preferences</a>` : ''}
           </div>
         ` : `
           <!-- Job Grid -->
@@ -636,61 +887,113 @@ class Router {
   }
 
   renderSettings() {
+    const prefs = this.preferences;
+    
     return `
-      <div class="settings-page">
-        <h1 class="page-title">Preferences</h1>
-        <p class="page-subtext">Customize your job notification preferences. These settings will be saved for your daily digest.</p>
-        
-        <div class="settings-form">
-          <div class="form-group">
-            <label class="form-label required">Role Keywords</label>
-            <input type="text" placeholder="e.g., Product Manager, Designer, Engineer">
-            <div class="form-help">Separate multiple keywords with commas.</div>
+      <div style="padding: 40px; max-width: 900px; margin: 0 auto;">
+        <div style="margin-bottom: 40px; border-bottom: 1px solid #E8E8E8; padding-bottom: 24px;">
+          <h1 style="font-family: 'Crimson Text', serif; font-size: 48px; margin: 0 0 8px 0; color: #111111; font-weight: 600;">Preferences</h1>
+          <p style="margin: 0; color: #666666; font-size: 16px;">Customize your job matching for intelligent recommendations</p>
+        </div>
+
+        <form id="preferences-form" style="display: flex; flex-direction: column; gap: 32px;">
+          <!-- Role Keywords -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 8px;">Role Keywords</label>
+            <input 
+              type="text"
+              id="pref-keywords"
+              value="${prefs.roleKeywords.join(', ')}"
+              placeholder="e.g., Python Developer, Frontend Engineer, Product Manager"
+              style="width: 100%; padding: 12px 16px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px; box-sizing: border-box;"
+            />
+            <p style="margin: 8px 0 0 0; color: #999999; font-size: 13px; font-family: 'Inter', sans-serif;">Separate multiple keywords with commas. These will be matched against job titles and descriptions.</p>
           </div>
 
-          <div class="form-group">
-            <label class="form-label required">Preferred Locations</label>
-            <input type="text" placeholder="e.g., San Francisco, New York, Remote">
-            <div class="form-help">Enter cities or type "Remote" for remote positions.</div>
+          <!-- Preferred Locations -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 12px;">Preferred Locations</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;">
+              ${this.getUniqueValues('location').map(loc => `
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px;">
+                  <input type="checkbox" class="pref-location" value="${loc}" ${prefs.preferredLocations.includes(loc) ? 'checked' : ''}>
+                  <span>${loc}</span>
+                </label>
+              `).join('')}
+            </div>
+            <p style="margin: 12px 0 0 0; color: #999999; font-size: 13px; font-family: 'Inter', sans-serif;">Select all locations you'd be interested in +${prefs.preferredLocations.length > 0 ? ` (${prefs.preferredLocations.length} selected)` : ''}</p>
           </div>
 
-          <div class="form-group">
-            <label class="form-label required">Work Mode</label>
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" name="workmode" value="remote">
+          <!-- Preferred Work Mode -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 12px;">Work Mode</label>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px;">
+                <input type="checkbox" class="pref-mode" value="Remote" ${prefs.preferredMode.includes('Remote') ? 'checked' : ''}>
                 <span>Remote</span>
               </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="workmode" value="hybrid">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px;">
+                <input type="checkbox" class="pref-mode" value="Hybrid" ${prefs.preferredMode.includes('Hybrid') ? 'checked' : ''}>
                 <span>Hybrid</span>
               </label>
-              <label class="checkbox-label">
-                <input type="checkbox" name="workmode" value="onsite">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px;">
+                <input type="checkbox" class="pref-mode" value="Onsite" ${prefs.preferredMode.includes('Onsite') ? 'checked' : ''}>
                 <span>Onsite</span>
               </label>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label required">Experience Level</label>
-            <div class="select-wrapper">
-              <select>
-                <option value="">Select an option</option>
-                <option value="entry">Entry Level (0-2 years)</option>
-                <option value="mid">Mid Level (2-5 years)</option>
-                <option value="senior">Senior (5+ years)</option>
-              </select>
-            </div>
+          <!-- Experience Level -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 8px;">Experience Level Target</label>
+            <select 
+              id="pref-experience"
+              style="width: 100%; padding: 12px 16px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px; background-color: #FFFFFF; cursor: pointer;"
+            >
+              <option value="">No preference</option>
+              <option value="Fresher" ${prefs.experienceLevel === 'Fresher' ? 'selected' : ''}>Fresher</option>
+              <option value="0–1 Years" ${prefs.experienceLevel === '0–1 Years' ? 'selected' : ''}>0–1 Years</option>
+              <option value="1–3 Years" ${prefs.experienceLevel === '1–3 Years' ? 'selected' : ''}>1–3 Years</option>
+              <option value="3–5 Years" ${prefs.experienceLevel === '3–5 Years' ? 'selected' : ''}>3–5 Years</option>
+              <option value="5+ Years" ${prefs.experienceLevel === '5+ Years' ? 'selected' : ''}>5+ Years</option>
+            </select>
           </div>
 
-          <div class="settings-actions">
-            <button class="btn-secondary" disabled>Reset</button>
-            <button class="btn-primary" disabled>Save Preferences</button>
+          <!-- Skills -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 8px;">Skills</label>
+            <input 
+              type="text"
+              id="pref-skills"
+              value="${prefs.skills.join(', ')}"
+              placeholder="e.g., JavaScript, React, SQL, AWS"
+              style="width: 100%; padding: 12px 16px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px; box-sizing: border-box;"
+            />
+            <p style="margin: 8px 0 0 0; color: #999999; font-size: 13px; font-family: 'Inter', sans-serif;">Separate skills with commas. Jobs will score higher if they match these skills.</p>
           </div>
 
-          <p class="settings-notice">Preferences placeholder. Functionality coming in next step.</p>
-        </div>
+          <!-- Match Score Threshold -->
+          <div>
+            <label style="display: block; font-family: 'Crimson Text', serif; font-size: 18px; color: #111111; font-weight: 600; margin-bottom: 12px;">
+              Minimum Match Score: <span id="score-display" style="color: #8B0000;">${prefs.minMatchScore}%</span>
+            </label>
+            <input 
+              type="range"
+              id="pref-min-score"
+              min="0"
+              max="100"
+              value="${prefs.minMatchScore}"
+              style="width: 100%; cursor: pointer; height: 6px; border-radius: 3px; background: #E8E8E8; outline: none; -webkit-appearance: none;"
+            />
+            <p style="margin: 12px 0 0 0; color: #999999; font-size: 13px; font-family: 'Inter', sans-serif;">Only show jobs with match scores at or above this threshold when "Show only matches" is enabled.</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 24px; border-top: 1px solid #E8E8E8;">
+            <button type="button" id="pref-reset-btn" style="padding: 12px 24px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #666666; font-weight: 500;">Reset</button>
+            <button type="submit" id="pref-save-btn" style="padding: 12px 24px; background: #8B0000; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #FFFFFF; font-weight: 500;">Save Preferences</button>
+          </div>
+        </form>
       </div>
     `;
   }
