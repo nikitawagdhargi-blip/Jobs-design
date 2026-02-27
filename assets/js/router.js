@@ -29,9 +29,127 @@ class Router {
 
     this.savedJobs = this.loadSavedJobs();
     this.preferences = this.loadPreferences();
+    this.todayDigest = this.loadTodayDigest();
     this.selectedJobId = null;
 
     this.init();
+  }
+
+  /**
+   * Get today's date in YYYY-MM-DD format
+   */
+  getTodayDate() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDisplayDate(dateString) {
+    const date = new Date(dateString + 'T00:00:00');
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  }
+
+  /**
+   * Load digest for today from localStorage
+   */
+  loadTodayDigest() {
+    const today = this.getTodayDate();
+    const key = `jobTrackerDigest_${today}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  }
+
+  /**
+   * Generate and save today's digest
+   */
+  generateDigest() {
+    if (!this.hasPreferences()) {
+      return null;
+    }
+
+    // Get all jobs with match scores
+    let jobs = jobsDatabase.map(job => ({
+      ...job,
+      matchScore: this.calculateMatchScore(job)
+    }));
+
+    // Filter jobs with match score >= minMatchScore
+    jobs = jobs.filter(job => job.matchScore >= this.preferences.minMatchScore);
+
+    // Sort by: matchScore descending, then postedDaysAgo ascending
+    jobs.sort((a, b) => {
+      if (b.matchScore !== a.matchScore) {
+        return b.matchScore - a.matchScore;
+      }
+      return a.postedDaysAgo - b.postedDaysAgo;
+    });
+
+    // Take top 10
+    const topJobs = jobs.slice(0, 10);
+
+    if (topJobs.length === 0) {
+      return null;
+    }
+
+    // Create digest object
+    const today = this.getTodayDate();
+    const digest = {
+      date: today,
+      generatedAt: new Date().toISOString(),
+      jobCount: topJobs.length,
+      jobs: topJobs.map(job => ({
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        experience: job.experience,
+        matchScore: job.matchScore,
+        applyUrl: job.applyUrl,
+        salaryRange: job.salaryRange
+      }))
+    };
+
+    // Save to localStorage
+    const key = `jobTrackerDigest_${today}`;
+    localStorage.setItem(key, JSON.stringify(digest));
+    this.todayDigest = digest;
+
+    return digest;
+  }
+
+  /**
+   * Format digest as plain text
+   */
+  formatDigestAsText() {
+    if (!this.todayDigest) return '';
+
+    const lines = [
+      '═══════════════════════════════════════════',
+      'TOP 10 JOBS FOR YOU — 9AM DIGEST',
+      this.formatDisplayDate(this.todayDigest.date),
+      '═══════════════════════════════════════════',
+      ''
+    ];
+
+    this.todayDigest.jobs.forEach((job, index) => {
+      lines.push(`${index + 1}. ${job.title}`);
+      lines.push(`   Company: ${job.company}`);
+      lines.push(`   Location: ${job.location}`);
+      lines.push(`   Experience: ${job.experience}`);
+      lines.push(`   Salary: ${job.salaryRange}`);
+      lines.push(`   Match Score: ${job.matchScore}%`);
+      lines.push(`   Apply: ${job.applyUrl}`);
+      lines.push('');
+    });
+
+    lines.push('═══════════════════════════════════════════');
+    lines.push('This digest was generated based on your preferences.');
+    lines.push('Set your preferences to activate personalized matching.');
+
+    return lines.join('\n');
   }
 
   /**
@@ -700,6 +818,58 @@ class Router {
         this.renderDashboard();
       });
     }
+
+    // Digest page button handlers
+    const generateDigestBtn = app.querySelector('#generate-digest-btn');
+    const copyDigestBtn = app.querySelector('#copy-digest-btn');
+    const emailDigestBtn = app.querySelector('#email-digest-btn');
+    const regenerateDigestBtn = app.querySelector('#regenerate-digest-btn');
+
+    if (generateDigestBtn) {
+      generateDigestBtn.addEventListener('click', () => {
+        const digest = this.generateDigest();
+        if (digest) {
+          this.renderDigest();
+        }
+      });
+    }
+
+    if (copyDigestBtn) {
+      copyDigestBtn.addEventListener('click', () => {
+        const text = this.formatDigestAsText();
+        navigator.clipboard.writeText(text).then(() => {
+          const originalText = copyDigestBtn.textContent;
+          copyDigestBtn.textContent = '✓ Copied!';
+          setTimeout(() => {
+            copyDigestBtn.textContent = originalText;
+          }, 2000);
+        }).catch(() => {
+          alert('Failed to copy to clipboard');
+        });
+      });
+    }
+
+    if (emailDigestBtn) {
+      emailDigestBtn.addEventListener('click', () => {
+        const text = this.formatDigestAsText();
+        const subject = 'My 9AM Job Digest';
+        const body = encodeURIComponent(text);
+        window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
+      });
+    }
+
+    if (regenerateDigestBtn) {
+      regenerateDigestBtn.addEventListener('click', () => {
+        const today = this.getTodayDate();
+        const key = `jobTrackerDigest_${today}`;
+        localStorage.removeItem(key);
+        this.todayDigest = null;
+        const digest = this.generateDigest();
+        if (digest) {
+          this.renderDigest();
+        }
+      });
+    }
   }
 
   /**
@@ -878,10 +1048,119 @@ class Router {
   };
 
   renderDigest() {
+    const hasPrefs = this.hasPreferences();
+    const digest = this.todayDigest;
+    const today = this.getTodayDate();
+    const displayDate = this.formatDisplayDate(today);
+
+    if (!hasPrefs) {
+      return `
+        <div style="padding: 40px; max-width: 900px; margin: 0 auto;">
+          <div style="margin-bottom: 40px; border-bottom: 1px solid #E8E8E8; padding-bottom: 24px;">
+            <h1 style="font-family: 'Crimson Text', serif; font-size: 48px; margin: 0 0 8px 0; color: #111111; font-weight: 600;">Daily Digest</h1>
+            <p style="margin: 0; color: #666666; font-size: 16px;">Smart job summaries delivered to you every morning</p>
+          </div>
+
+          <!-- Blocking Message -->
+          <div style="text-align: center; padding: 60px 24px; background: #FFF3E0; border: 1px solid #FFB74D; border-radius: 4px;">
+            <p style="font-family: 'Crimson Text', serif; font-size: 32px; margin: 0 0 16px 0; color: #E65100; font-weight: 600;">Set your preferences first</p>
+            <p style="margin: 0 0 24px 0; color: #E65100; font-size: 15px; font-family: 'Inter', sans-serif;">Configure your job preferences to generate a personalized digest.</p>
+            <a href="/settings" data-link style="display: inline-block; padding: 12px 24px; background: #E65100; color: #FFFFFF; text-decoration: none; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;">Configure Preferences</a>
+          </div>
+        </div>
+      `;
+    }
+
+    if (!digest) {
+      return `
+        <div style="padding: 40px; max-width: 900px; margin: 0 auto;">
+          <div style="margin-bottom: 40px; border-bottom: 1px solid #E8E8E8; padding-bottom: 24px;">
+            <h1 style="font-family: 'Crimson Text', serif; font-size: 48px; margin: 0 0 8px 0; color: #111111; font-weight: 600;">Daily Digest</h1>
+            <p style="margin: 0; color: #666666; font-size: 16px;">Smart job summaries delivered to you every morning</p>
+          </div>
+
+          <!-- Generate Button -->
+          <div style="text-align: center; margin-bottom: 40px;">
+            <button id="generate-digest-btn" style="padding: 12px 32px; background: #8B0000; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #FFFFFF; font-weight: 500;">Generate Today's 9AM Digest (Simulated)</button>
+          </div>
+
+          <!-- No Matches State -->
+          <div style="text-align: center; padding: 60px 24px; background: #F7F6F3; border-radius: 4px; border: 1px solid #E8E8E8;">
+            <p style="font-family: 'Crimson Text', serif; font-size: 32px; margin: 0 0 16px 0; color: #111111; font-weight: 600;">No matching roles today.</p>
+            <p style="margin: 0 0 24px 0; color: #666666; font-size: 15px; font-family: 'Inter', sans-serif;">Check again tomorrow or adjust your preferences to see matching jobs.</p>
+            <a href="/settings" data-link style="display: inline-block; margin-right: 12px; padding: 10px 20px; background: #F7F6F3; border: 1px solid #E8E8E8; color: #111111; text-decoration: none; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;">Adjust Preferences</a>
+            <a href="/dashboard" data-link style="display: inline-block; padding: 10px 20px; background: #8B0000; border: none; color: #FFFFFF; text-decoration: none; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;">Browse All Jobs</a>
+          </div>
+
+          <!-- Demo Note -->
+          <p style="margin-top: 32px; text-align: center; color: #CCCCCC; font-size: 12px; font-family: 'Inter', sans-serif;">Demo Mode: Daily 9AM trigger simulated manually.</p>
+        </div>
+      `;
+    }
+
+    // Render existing digest
     return `
-      <div class="page-placeholder">
-        <h1 class="page-title">Job Digest</h1>
-        <p class="page-subtext">Your daily job digest will be delivered at 9AM to your email. Set up your preferences to get started.</p>
+      <div style="padding: 40px; max-width: 900px; margin: 0 auto;">
+        <!-- Context Header -->
+        <div style="margin-bottom: 40px; border-bottom: 1px solid #E8E8E8; padding-bottom: 24px;">
+          <h1 style="font-family: 'Crimson Text', serif; font-size: 48px; margin: 0 0 8px 0; color: #111111; font-weight: 600;">Daily Digest</h1>
+          <p style="margin: 0; color: #666666; font-size: 16px;">Smart job summaries delivered to you every morning</p>
+        </div>
+
+        <!-- Digest Container (Email-style) -->
+        <div style="background: #F7F6F3; padding: 40px 20px; border-radius: 4px;">
+          <div style="background: #FFFFFF; max-width: 720px; margin: 0 auto; border-radius: 4px; padding: 40px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+            <!-- Digest Header -->
+            <div style="text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #E8E8E8;">
+              <h2 style="font-family: 'Crimson Text', serif; font-size: 28px; margin: 0 0 8px 0; color: #111111; font-weight: 600;">Top 10 Jobs For You</h2>
+              <p style="margin: 0 0 8px 0; color: #666666; font-size: 14px; font-family: 'Inter', sans-serif;">9AM Digest</p>
+              <p style="margin: 0; color: #999999; font-size: 13px; font-family: 'Inter', sans-serif;">${displayDate}</p>
+            </div>
+
+            <!-- Jobs List -->
+            <div style="margin-bottom: 32px;">
+              ${digest.jobs.map((job, index) => `
+                <div style="padding: 20px 0; border-bottom: 1px solid #F0F0F0; ${index === digest.jobs.length - 1 ? 'border-bottom: none;' : ''}">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                      <h3 style="font-family: 'Crimson Text', serif; font-size: 18px; margin: 0 0 4px 0; color: #111111; font-weight: 600;">${index + 1}. ${job.title}</h3>
+                      <p style="margin: 0 0 8px 0; color: #666666; font-size: 14px; font-family: 'Inter', sans-serif; font-weight: 500;">${job.company}</p>
+                    </div>
+                    <div style="background: ${job.matchScore >= 80 ? '#E8F5E9' : job.matchScore >= 60 ? '#FFF8E1' : job.matchScore >= 40 ? '#F5F5F5' : '#FAFAFA'}; color: ${job.matchScore >= 80 ? '#2E7D32' : job.matchScore >= 60 ? '#F57F17' : job.matchScore >= 40 ? '#666666' : '#CCCCCC'}; padding: 8px 12px; border-radius: 3px; font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 600; white-space: nowrap;">
+                      ${job.matchScore}% Match
+                    </div>
+                  </div>
+
+                  <!-- Job Meta -->
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; font-size: 13px; font-family: 'Inter', sans-serif; color: #666666;">
+                    <span>📍 ${job.location}</span>
+                    <span>💼 ${job.experience}</span>
+                    <span>💰 ${job.salaryRange}</span>
+                  </div>
+
+                  <!-- Apply Button -->
+                  <a href="${job.applyUrl}" target="_blank" style="display: inline-block; padding: 8px 16px; background: #8B0000; color: #FFFFFF; text-decoration: none; border-radius: 3px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;">Apply Now</a>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Digest Footer -->
+            <div style="text-align: center; padding-top: 24px; border-top: 2px solid #E8E8E8; color: #999999; font-size: 12px; font-family: 'Inter', sans-serif;">
+              <p style="margin: 0;">This digest was generated based on your preferences.</p>
+              <p style="margin: 4px 0 0 0;">Modify your settings anytime to get better recommendations.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap;">
+          <button id="copy-digest-btn" style="padding: 12px 24px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #111111; font-weight: 500;">Copy to Clipboard</button>
+          <button id="email-digest-btn" style="padding: 12px 24px; background: #8B0000; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #FFFFFF; font-weight: 500;">Create Email Draft</button>
+          <button id="regenerate-digest-btn" style="padding: 12px 24px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; color: #666666; font-weight: 500;">Regenerate</button>
+        </div>
+
+        <!-- Demo Note -->
+        <p style="margin-top: 32px; text-align: center; color: #CCCCCC; font-size: 12px; font-family: 'Inter', sans-serif;">Demo Mode: Daily 9AM trigger simulated manually.</p>
       </div>
     `;
   }
