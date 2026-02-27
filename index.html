@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Notification App — Dashboard</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Design System -->
+  <link rel="stylesheet" href="design-system/tokens/design-tokens.css">
+  <link rel="stylesheet" href="design-system/components/components.css">
+  <link rel="stylesheet" href="design-system/layouts/layout.css">
+  
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="assets/css/app.css">
+  
+  <style>
+    /* Override topbar for sticky navigation */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      padding: 0 var(--space-lg);
+      background-color: var(--color-white);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-left {
+      flex: 0 0 auto;
+    }
+
+    .topbar-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 var(--space-lg);
+    }
+
+    .topbar-right {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .app-name {
+      font-family: var(--font-serif);
+      font-size: var(--font-size-h4);
+      font-weight: var(--font-weight-serif-semibold);
+      color: var(--color-text-primary);
+      margin: 0;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+
+    .app-name:hover {
+      color: var(--color-accent);
+    }
+
+    /* Navigation Menu */
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      display: block;
+      color: var(--color-text-primary);
+      text-decoration: none;
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-medium);
+      padding: var(--space-sm) 0;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+      position: relative;
+    }
+
+    .nav-link:hover {
+      color: var(--color-accent);
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: var(--color-accent);
+      transition: width var(--transition-normal);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-link.active {
+      color: var(--color-accent);
+    }
+
+    .nav-link.active::after {
+      width: 100%;
+    }
+
+    /* Mobile Menu Toggle */
+    .mobile-menu-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: var(--space-sm);
+      color: var(--color-text-primary);
+      font-size: 24px;
+      transition: all var(--transition-normal);
+    }
+
+    .mobile-menu-toggle:hover {
+      color: var(--color-accent);
+    }
+
+    /* Mobile Menu */
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      top: 64px;
+      left: 0;
+      right: 0;
+      background-color: var(--color-white);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow-md);
+      padding: var(--space-md) 0;
+      z-index: 99;
+    }
+
+    .mobile-menu.active {
+      display: block;
+    }
+
+    .mobile-menu .nav-menu {
+      flex-direction: column;
+      gap: var(--space-md);
+      padding: 0 var(--space-lg);
+    }
+
+    .mobile-menu .nav-link {
+      padding: var(--space-sm);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .mobile-menu .nav-link:last-child {
+      border-bottom: none;
+    }
+
+    /* Main App Container */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background-color: var(--color-background);
+    }
+
+    .page-container {
+      flex: 1;
+      padding: var(--space-lg);
+    }
+
+    /* Page Placeholder */
+    .page-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-md);
+      max-width: var(--max-width-text);
+    }
+
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: var(--font-size-h1);
+      font-weight: var(--font-weight-serif-semibold);
+      line-height: var(--line-height-tight);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .page-subtext {
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-normal);
+      color: var(--color-neutral-medium);
+      margin: 0;
+    }
+
+    /* 404 Page */
+    .page-not-found {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-xl) 0;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .topbar {
+        padding: 0 var(--space-md);
+      }
+
+      .topbar-center {
+        display: none;
+      }
+
+      .topbar-left,
+      .topbar-right {
+        flex: 1;
+      }
+
+      .nav-menu {
+        display: none;
+      }
+
+      .mobile-menu-toggle {
+        display: block;
+      }
+
+      .page-container {
+        padding: var(--space-md);
+      }
+
+      .page-title {
+        font-size: var(--font-size-h2);
+      }
+    }
+
+    /* Smooth Page Transitions */
+    .page-content {
+      animation: fadeIn 200ms ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Navigation / Top Bar -->
+    <nav class="topbar">
+      <div class="topbar-left">
+        <a href="/" class="app-name" data-link>Job Notification App</a>
+      </div>
+
+      <div class="topbar-center">
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/dashboard" class="nav-link" data-link data-route="dashboard">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="/saved" class="nav-link" data-link data-route="saved">Saved</a>
+          </li>
+          <li class="nav-item">
+            <a href="/digest" class="nav-link" data-link data-route="digest">Digest</a>
+          </li>
+          <li class="nav-item">
+            <a href="/settings" class="nav-link" data-link data-route="settings">Settings</a>
+          </li>
+          <li class="nav-item">
+            <a href="/proof" class="nav-link" data-link data-route="proof">Proof</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="topbar-right">
+        <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu">
+          ☰
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/dashboard" class="nav-link" data-link data-route="dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a href="/saved" class="nav-link" data-link data-route="saved">Saved</a>
+        </li>
+        <li class="nav-item">
+          <a href="/digest" class="nav-link" data-link data-route="digest">Digest</a>
+        </li>
+        <li class="nav-item">
+          <a href="/settings" class="nav-link" data-link data-route="settings">Settings</a>
+        </li>
+        <li class="nav-item">
+          <a href="/proof" class="nav-link" data-link data-route="proof">Proof</a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Page Content -->
+    <div class="page-container">
+      <div id="app" class="page-content"></div>
+    </div>
+  </div>
+
+  <!-- Application Router -->
+  <script src="assets/js/router.js"></script>
+</body>
+</html>
