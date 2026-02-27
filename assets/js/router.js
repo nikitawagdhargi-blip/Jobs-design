@@ -23,6 +23,7 @@ class Router {
       mode: '',
       experience: '',
       source: '',
+      status: 'All',
       sort: 'match-score',
       showOnlyMatches: false
     };
@@ -30,6 +31,8 @@ class Router {
     this.savedJobs = this.loadSavedJobs();
     this.preferences = this.loadPreferences();
     this.todayDigest = this.loadTodayDigest();
+    this.jobStatuses = this.loadJobStatuses();
+    this.statusLog = this.loadStatusLog();
     this.selectedJobId = null;
 
     this.init();
@@ -41,6 +44,64 @@ class Router {
   getTodayDate() {
     const now = new Date();
     return now.toISOString().split('T')[0];
+  }
+
+  /**
+   * Load job statuses map from localStorage
+   */
+  loadJobStatuses() {
+    const saved = localStorage.getItem('jobTrackerStatus');
+    return saved ? JSON.parse(saved) : {};
+  }
+
+  /**
+   * Save job statuses map
+   */
+  saveJobStatuses() {
+    localStorage.setItem('jobTrackerStatus', JSON.stringify(this.jobStatuses));
+  }
+
+  /**
+   * Load status change log for digest
+   */
+  loadStatusLog() {
+    const saved = localStorage.getItem('jobTrackerStatusLog');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  /**
+   * Save status change log
+   */
+  saveStatusLog() {
+    localStorage.setItem('jobTrackerStatusLog', JSON.stringify(this.statusLog));
+  }
+
+  /**
+   * Record status change in log
+   */
+  logStatusChange(job, status) {
+    this.statusLog.unshift({
+      jobId: job.id,
+      title: job.title,
+      company: job.company,
+      status,
+      date: new Date().toISOString()
+    });
+    // keep log size reasonable (eg. 50)
+    if (this.statusLog.length > 50) this.statusLog.pop();
+    this.saveStatusLog();
+  }
+
+  /**
+   * Get color for status badge
+   */
+  getStatusBadgeColor(status) {
+    switch (status) {
+      case 'Applied': return {bg:'#E3F2FD', text:'#1565C0'}; // blue
+      case 'Rejected': return {bg:'#FFEBEE', text:'#C62828'}; // red
+      case 'Selected': return {bg:'#E8F5E9', text:'#2E7D32'}; // green
+      default: return {bg:'#F5F5F5', text:'#666666'}; // neutral
+    }
   }
 
   /**
@@ -357,6 +418,14 @@ class Router {
       filtered = filtered.filter(job => job.matchScore >= this.preferences.minMatchScore);
     }
 
+    // Status filter
+    if (this.filters.status && this.filters.status !== 'All') {
+      filtered = filtered.filter(job => {
+        const status = this.jobStatuses[job.id] || 'Not Applied';
+        return status === this.filters.status;
+      });
+    }
+
     // Sorting
     if (this.filters.sort === 'match-score') {
       filtered.sort((a, b) => b.matchScore - a.matchScore);
@@ -427,12 +496,28 @@ class Router {
         <!-- Posted Info -->
         <p style="margin: 0; color: #999999; font-size: 12px; font-family: 'Inter', sans-serif;">Posted on ${job.source} • ${job.postedDaysAgo} ${job.postedDaysAgo === 1 ? 'day' : 'days'} ago</p>
 
+        <!-- Status Badge & Selector -->
+        <div style="position:absolute; top:12px; left:12px;">
+          ${(() => {
+            const st = this.jobStatuses[job.id] || 'Not Applied';
+            const col = this.getStatusBadgeColor(st);
+            return `<span style="background:${col.bg};color:${col.text};padding:4px 8px;border-radius:3px;font-size:12px;font-family:'Inter',sans-serif;font-weight:600;">${st}</span>`;
+          })()}
+        </div>
+
         <!-- Action Buttons -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
           <button class="job-view-btn" data-job-id="${job.id}" style="padding: 10px 12px; background: #F7F6F3; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #111111; font-weight: 500; transition: all 200ms;">View Details</button>
           <button class="job-save-btn" data-job-id="${job.id}" style="padding: 10px 12px; background: #FFFFFF; border: 1px solid #E8E8E8; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #8B0000; font-weight: 500; transition: all 200ms;">${isSaved ? '★ Saved' : '☆ Save'}</button>
         </div>
         <button class="job-apply-btn" data-job-id="${job.id}" style="width: 100%; padding: 12px 12px; background: #8B0000; border: none; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; color: #FFFFFF; font-weight: 500; transition: all 200ms;">Apply Now</button>
+
+        <!-- Status Selector -->
+        <div style="margin-top:12px;">
+          <select class="job-status-select" data-job-id="${job.id}" style="width:100%;padding:8px 10px;border:1px solid #E8E8E8;border-radius:4px;font-family:'Inter',sans-serif;font-size:13px;">
+            ${['Not Applied','Applied','Rejected','Selected'].map(s=>`<option value="${s}" ${((this.jobStatuses[job.id]||'Not Applied')===s?'selected':'')}>${s}</option>`).join('')}
+          </select>
+        </div>
       </div>
     `;
   }
@@ -645,6 +730,29 @@ class Router {
   attachJobCardListeners() {
     const app = document.getElementById('app');
 
+    // Helper: show non-blocking toast
+    const showToast = (message) => {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.bottom = '20px';
+      toast.style.right = '20px';
+      toast.style.background = '#111';
+      toast.style.color = '#fff';
+      toast.style.padding = '12px 20px';
+      toast.style.borderRadius = '4px';
+      toast.style.fontFamily = 'Inter, sans-serif';
+      toast.style.fontSize = '14px';
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 200ms';
+      document.body.appendChild(toast);
+      requestAnimationFrame(() => { toast.style.opacity = '1'; });
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => { toast.remove(); }, 200);
+      }, 2500);
+    };
+
     // View details button
     app.addEventListener('click', (e) => {
       if (e.target.classList.contains('job-view-btn')) {
@@ -669,6 +777,27 @@ class Router {
         const jobId = parseInt(e.target.getAttribute('data-job-id'));
         const job = jobsDatabase.find(j => j.id === jobId);
         if (job) window.open(job.applyUrl, '_blank');
+      }
+    });
+
+    // Status selector change
+    app.addEventListener('change', (e) => {
+      if (e.target.classList.contains('job-status-select')) {
+        const jobId = parseInt(e.target.getAttribute('data-job-id'));
+        const newStatus = e.target.value;
+        const oldStatus = this.jobStatuses[jobId] || 'Not Applied';
+        if (newStatus !== oldStatus) {
+          this.jobStatuses[jobId] = newStatus;
+          this.saveJobStatuses();
+          const job = jobsDatabase.find(j=>j.id===jobId);
+          if (job) {
+            this.logStatusChange(job, newStatus);
+          }
+          showToast(`Status updated: ${newStatus}`);
+          this.renderDashboard();
+          this.renderSaved();
+          this.renderDigest();
+        }
       }
     });
 
@@ -751,6 +880,7 @@ class Router {
     const filterMode = app.querySelector('#filter-mode');
     const filterExperience = app.querySelector('#filter-experience');
     const filterSource = app.querySelector('#filter-source');
+    const filterStatus = app.querySelector('#filter-status');
     const filterSort = app.querySelector('#filter-sort');
     const clearFiltersBtn = app.querySelector('#clear-filters');
     const showOnlyMatchesToggle = app.querySelector('#show-only-matches');
@@ -790,6 +920,13 @@ class Router {
       });
     }
 
+    if (filterStatus) {
+      filterStatus.addEventListener('change', (e) => {
+        this.filters.status = e.target.value;
+        this.renderDashboard();
+      });
+    }
+
     if (filterSort) {
       filterSort.addEventListener('change', (e) => {
         this.filters.sort = e.target.value;
@@ -805,6 +942,7 @@ class Router {
           mode: '',
           experience: '',
           source: '',
+          status: 'All',
           sort: 'match-score',
           showOnlyMatches: false
         };
@@ -967,6 +1105,15 @@ class Router {
             <select id="filter-source" style="padding: 10px 12px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px;">
               <option value="">All Sources</option>
               ${this.getUniqueValues('source').map(src => `<option value="${src}" ${this.filters.source === src ? 'selected' : ''}>${src}</option>`).join('')}
+            </select>
+
+            <!-- Status Filter -->
+            <select id="filter-status" style="padding: 10px 12px; border: 1px solid #E8E8E8; border-radius: 4px; font-family: 'Inter', sans-serif; font-size: 14px;">
+              <option value="All">All Statuses</option>
+              <option value="Not Applied" ${this.filters.status==='Not Applied'?'selected':''}>Not Applied</option>
+              <option value="Applied" ${this.filters.status==='Applied'?'selected':''}>Applied</option>
+              <option value="Rejected" ${this.filters.status==='Rejected'?'selected':''}>Rejected</option>
+              <option value="Selected" ${this.filters.status==='Selected'?'selected':''}>Selected</option>
             </select>
 
             <!-- Sort -->
@@ -1151,6 +1298,20 @@ class Router {
             </div>
           </div>
         </div>
+
+        <!-- Recent Status Updates -->
+        ${this.statusLog && this.statusLog.length ? `
+        <div style="margin-top: 40px; max-width: 720px; margin-left: auto; margin-right: auto;">
+          <h3 style="font-family: 'Crimson Text', serif; font-size: 22px; color: #111111;">Recent Status Updates</h3>
+          <ul style="list-style: none; padding: 0; margin: 16px 0 0 0; font-family: 'Inter', sans-serif; color: #666666; font-size: 14px;">
+            ${this.statusLog.slice(0,5).map(u=>`
+              <li style="margin-bottom: 12px;">
+                <strong>${u.title}</strong> at <em>${u.company}</em> – ${u.status} (<span>${new Date(u.date).toLocaleString()}</span>)
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+        ` : ''}
 
         <!-- Action Buttons -->
         <div style="display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap;">
