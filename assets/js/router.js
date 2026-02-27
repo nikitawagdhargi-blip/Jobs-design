@@ -14,6 +14,8 @@ class Router {
       '/digest': this.renderDigest,
       '/settings': this.renderSettings,
       '/proof': this.renderProof,
+      '/jt/07-test': this.renderTest,
+      '/jt/08-ship': this.renderShip,
     };
 
     // State management
@@ -33,6 +35,7 @@ class Router {
     this.todayDigest = this.loadTodayDigest();
     this.jobStatuses = this.loadJobStatuses();
     this.statusLog = this.loadStatusLog();
+    this.testStatus = this.loadTestStatus();          // <-- track checklist state
     this.selectedJobId = null;
 
     this.init();
