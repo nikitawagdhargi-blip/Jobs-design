@@ -1,0 +1,267 @@
+/* 
+ * Job Notification App - Premium SaaS Design System
+ * Design Tokens
+ * 
+ * All values derived from core design philosophy:
+ * Calm, Intentional, Coherent, Confident
+ */
+
+:root {
+  /* ======================================
+     COLOR PALETTE
+     ====================================== */
+  
+  /* Core Colors */
+  --color-background: #F7F6F3;      /* Off-white base */
+  --color-text-primary: #111111;    /* Deep neutral text */
+  --color-accent: #8B0000;          /* Deep red */
+  --color-white: #FFFFFF;
+  
+  /* Semantic Colors */
+  --color-success: #4B7C59;          /* Muted green */
+  --color-warning: #B8860B;          /* Muted amber */
+  --color-error: #8B0000;            /* Same as accent for consistency */
+  --color-neutral-light: #F7F6F3;
+  --color-neutral-medium: #DCDAD5;
+  --color-neutral-dark: #333333;
+  
+  /* Borders and Dividers */
+  --color-border: #E5E3E0;
+  --color-border-subtle: #EEE9E3;
+  
+  /* Interactive States */
+  --color-hover: #F0ECEA;            /* Slightly darker than background */
+  --color-active: #A4A19B;           /* Medium neutral for active state */
+  --color-disabled: #C4C1BD;         /* Muted gray */
+  
+  /* ======================================
+     TYPOGRAPHY
+     ====================================== */
+  
+  /* Font Families */
+  --font-serif: 'Crimson Text', 'Georgia', serif;
+  --font-sans: 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
+  --font-mono: 'Fira Code', 'Monaco', monospace;
+  
+  /* Heading Sizes */
+  --font-size-h1: 48px;
+  --font-size-h2: 36px;
+  --font-size-h3: 28px;
+  --font-size-h4: 24px;
+  
+  /* Body Sizes */
+  --font-size-body-large: 18px;
+  --font-size-body: 16px;
+  --font-size-body-small: 14px;
+  --font-size-label: 12px;
+  
+  /* Font Weights - Sans Serif */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Font Weights - Serif */
+  --font-weight-serif-regular: 400;
+  --font-weight-serif-semibold: 600;
+  
+  /* Line Heights */
+  --line-height-tight: 1.4;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+  
+  /* Letter Spacing */
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  
+  /* ======================================
+     SPACING SCALE
+     ====================================== */
+  
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 40px;
+  --space-xl: 64px;
+  
+  /* Text Block Width Constraint */
+  --max-width-text: 720px;
+  
+  /* ======================================
+     LAYOUT DIMENSIONS
+     ====================================== */
+  
+  --layout-viewport-width: 100%;
+  --layout-primary-width: 70%;
+  --layout-secondary-width: 30%;
+  
+  --topbar-height: 64px;
+  --footer-height: 80px;
+  
+  /* ======================================
+     BORDER RADIUS
+     ====================================== */
+  
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  
+  /* ======================================
+     SHADOWS
+     ====================================== */
+  
+  /* Subtle only - no heavy shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
+  /* Focus Ring */
+  --focus-ring: 2px solid var(--color-accent);
+  --focus-ring-offset: 2px;
+  
+  /* ======================================
+     TRANSITIONS
+     ====================================== */
+  
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+  
+  /* ======================================
+     COMPONENT SPECIFIC VALUES
+     ====================================== */
+  
+  /* Buttons */
+  --button-height-sm: 36px;
+  --button-height-md: 44px;
+  --button-height-lg: 52px;
+  --button-padding-x: 20px;
+  --button-border-width: 1px;
+  
+  /* Inputs */
+  --input-height: 44px;
+  --input-padding-x: 16px;
+  --input-padding-y: 12px;
+  --input-border-width: 1px;
+  
+  /* Cards */
+  --card-padding: 24px;
+  --card-border: 1px solid var(--color-border);
+  --card-border-radius: var(--radius-lg);
+  
+  /* Forms */
+  --form-row-gap: 24px;
+  --form-label-margin-bottom: 8px;
+  
+  /* Responsive */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 1024px;
+  --breakpoint-lg: 1440px;
+}
+
+/* ======================================
+   BASE TYPOGRAPHY STYLES
+   ====================================== */
+
+h1, .h1 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-serif-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-normal);
+  margin: 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-serif-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-normal);
+  margin: 0;
+}
+
+h3, .h3 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-serif-semibold);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+h4, .h4 {
+  font-family: var(--font-serif);
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-serif-semibold);
+  line-height: var(--line-height-normal);
+  margin: 0;
+}
+
+p, body {
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.text-large {
+  font-size: var(--font-size-body-large);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-small {
+  font-size: var(--font-size-body-small);
+  line-height: var(--line-height-normal);
+}
+
+.text-label {
+  font-size: var(--font-size-label);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--color-text-primary);
+}
+
+/* ======================================
+   GLOBAL STYLES
+   ====================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Maximum width constraint for text blocks */
+.text-block {
+  max-width: var(--max-width-text);
+}
+
+/* Focus states across all interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Smooth transitions */
+button,
+a,
+input,
+textarea,
+.interactive {
+  transition: all var(--transition-normal);
+}

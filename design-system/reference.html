@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Notification App — Design System Reference</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Design System Styles -->
+  <link rel="stylesheet" href="tokens/design-tokens.css">
+  <link rel="stylesheet" href="components/components.css">
+  <link rel="stylesheet" href="layouts/layout.css">
+  
+  <style>
+    /* Reference Page Specific Styles */
+    .reference-container {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .reference-section {
+      padding: var(--space-lg);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .reference-section:last-child {
+      border-bottom: none;
+    }
+
+    .reference-title {
+      font-family: var(--font-serif);
+      font-size: var(--font-size-h2);
+      font-weight: var(--font-weight-serif-semibold);
+      margin-bottom: var(--space-lg);
+      color: var(--color-text-primary);
+    }
+
+    .reference-subtitle {
+      font-family: var(--font-serif);
+      font-size: var(--font-size-h4);
+      font-weight: var(--font-weight-serif-semibold);
+      margin-top: var(--space-lg);
+      margin-bottom: var(--space-md);
+      color: var(--color-text-primary);
+    }
+
+    .reference-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+
+    .color-swatch {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+    }
+
+    .color-sample {
+      height: 100px;
+      width: 100%;
+    }
+
+    .color-info {
+      padding: var(--space-sm);
+      background-color: var(--color-white);
+      font-size: var(--font-size-body-small);
+    }
+
+    .color-name {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .color-value {
+      color: var(--color-neutral-medium);
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .demo-area {
+      background-color: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+
+    .demo-title {
+      font-size: var(--font-size-body-small);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-neutral-medium);
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-wide);
+      margin-bottom: var(--space-sm);
+    }
+
+    .button-group {
+      display: flex;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .spacing-demo {
+      background-color: var(--color-background);
+      border: 1px dashed var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-md);
+    }
+
+    .spacing-item {
+      background-color: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-body-small);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+
+    .spacing-8 { margin: 8px; }
+    .spacing-16 { margin: 16px; }
+    .spacing-24 { margin: 24px; }
+    .spacing-40 { margin: 40px; }
+    .spacing-64 { margin: 64px; }
+
+    .type-sample {
+      padding: var(--space-md);
+      background-color: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-md);
+    }
+
+    .type-label {
+      font-size: var(--font-size-label);
+      color: var(--color-neutral-medium);
+      text-transform: uppercase;
+      letter-spacing: var(--letter-spacing-wide);
+      margin-bottom: var(--space-xs);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: var(--space-lg);
+    }
+
+    .table th {
+      background-color: var(--color-hover);
+      padding: var(--space-sm);
+      text-align: left;
+      font-weight: var(--font-weight-semibold);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .table td {
+      padding: var(--space-sm);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .status-badge-demo {
+      display: inline-flex;
+      gap: var(--space-sm);
+    }
+
+    @media (max-width: 768px) {
+      .reference-section {
+        padding: var(--space-md);
+      }
+
+      .reference-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container reference-container">
+    <!-- Top Bar Reference -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1 class="app-name">Job Notification App</h1>
+      </div>
+      <div class="topbar-center">
+        <div class="progress-indicator">
+          Design System | <span class="progress-step">Foundation</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="status-badge shipped">
+          <span class="status-dot"></span>
+          Complete
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Header Reference -->
+    <div class="context-header">
+      <div class="context-header-wrapper">
+        <h2 class="context-headline">Design System Reference</h2>
+        <p class="context-subtext">Premium SaaS design foundation. All colors, typography, spacing, and component specifications documented below.</p>
+      </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+      <div class="primary-workspace">
+        
+        <!-- COLOR SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Color Palette</h3>
+          <p>Restricted to 4 core colors. Additional semantic colors for states. Maximum 4 colors per screen.</p>
+          
+          <h4 class="reference-subtitle">Primary Colors</h4>
+          <div class="reference-grid">
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #F7F6F3; border-bottom: 1px solid var(--color-border);"></div>
+              <div class="color-info">
+                <div class="color-name">Background</div>
+                <div class="color-value">#F7F6F3</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #111111;"></div>
+              <div class="color-info">
+                <div class="color-name">Primary Text</div>
+                <div class="color-value">#111111</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #8B0000;"></div>
+              <div class="color-info">
+                <div class="color-name">Accent</div>
+                <div class="color-value">#8B0000</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #FFFFFF; border: 1px solid var(--color-border);"></div>
+              <div class="color-info">
+                <div class="color-name">White</div>
+                <div class="color-value">#FFFFFF</div>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="reference-subtitle">Semantic Colors</h4>
+          <div class="reference-grid">
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #4B7C59;"></div>
+              <div class="color-info">
+                <div class="color-name">Success</div>
+                <div class="color-value">#4B7C59</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #B8860B;"></div>
+              <div class="color-info">
+                <div class="color-name">Warning</div>
+                <div class="color-value">#B8860B</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #DCDAD5;"></div>
+              <div class="color-info">
+                <div class="color-name">Neutral Med</div>
+                <div class="color-value">#DCDAD5</div>
+              </div>
+            </div>
+            <div class="color-swatch">
+              <div class="color-sample" style="background-color: #E5E3E0;"></div>
+              <div class="color-info">
+                <div class="color-name">Border</div>
+                <div class="color-value">#E5E3E0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TYPOGRAPHY SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Typography</h3>
+          <p>Serif for headings (confidence), sans for body (clarity). Generous spacing. Maximum 720px text width.</p>
+          
+          <h4 class="reference-subtitle">Headings (Serif: Crimson Text)</h4>
+          <div class="type-sample">
+            <div class="type-label">H1 — 48px Semibold</div>
+            <h1 style="margin-bottom: var(--space-md);">Premium Design System</h1>
+            <div class="type-label">H2 — 36px Semibold</div>
+            <h2 style="margin-bottom: var(--space-md);">Color & Typography</h2>
+            <div class="type-label">H3 — 28px Semibold</div>
+            <h3 style="margin-bottom: var(--space-md);">Component Specifications</h3>
+            <div class="type-label">H4 — 24px Semibold</div>
+            <h4>Guidelines & Standards</h4>
+          </div>
+
+          <h4 class="reference-subtitle">Body Text (Sans: Inter)</h4>
+          <div class="type-sample">
+            <div class="type-label">Large — 18px Regular, 1.8 Line Height</div>
+            <p class="text-large" style="margin-bottom: var(--space-md);">This is body text large. Used for key information and important introductions. Calm and confident.</p>
+            <div class="type-label">Normal — 16px Regular, 1.6 Line Height</div>
+            <p style="margin-bottom: var(--space-md);">This is body text. Default for paragraphs, form labels, and general content. Clear and readable.</p>
+            <div class="type-label">Small — 14px Regular, 1.6 Line Height</div>
+            <p class="text-small" style="margin-bottom: var(--space-md);">This is small text. Used for secondary information, hints, and helper text.</p>
+            <div class="type-label">Label — 12px Medium, Uppercase</div>
+            <p class="text-label">THIS IS A LABEL. USED FOR FORM LABELS AND SMALL HEADINGS.</p>
+          </div>
+        </div>
+
+        <!-- SPACING SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Spacing Scale</h3>
+          <p>Strict 5-value scale. No random increments. Every value serves a purpose.</p>
+          
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Value</th>
+                <th>CSS Variable</th>
+                <th>Usage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Extra Small</td>
+                <td>8px</td>
+                <td><code>--space-xs</code></td>
+                <td>Tight spacing, adjacent elements</td>
+              </tr>
+              <tr>
+                <td>Small</td>
+                <td>16px</td>
+                <td><code>--space-sm</code></td>
+                <td>Component margins, form helpers</td>
+              </tr>
+              <tr>
+                <td>Medium</td>
+                <td>24px</td>
+                <td><code>--space-md</code></td>
+                <td>Standard padding, gaps (most common)</td>
+              </tr>
+              <tr>
+                <td>Large</td>
+                <td>40px</td>
+                <td><code>--space-lg</code></td>
+                <td>Major sections, page padding</td>
+              </tr>
+              <tr>
+                <td>Extra Large</td>
+                <td>64px</td>
+                <td><code>--space-xl</code></td>
+                <td>Hero areas, major visual breaks</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4 class="reference-subtitle">Spacing Examples</h4>
+          <div class="spacing-demo">
+            <div class="spacing-item spacing-8">Space: 8px</div>
+            <div class="spacing-item spacing-16">Space: 16px</div>
+            <div class="spacing-item spacing-24">Space: 24px</div>
+          </div>
+        </div>
+
+        <!-- BUTTONS SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Buttons</h3>
+          <p>Three styles: Primary (solid red), Secondary (outlined), Tertiary (text). Consistent 8px border radius.</p>
+          
+          <div class="demo-area">
+            <div class="demo-title">Primary Buttons</div>
+            <div class="button-group">
+              <button class="btn-primary">Primary Button</button>
+              <button class="btn-primary btn-sm">Small</button>
+              <button class="btn-primary btn-lg">Large</button>
+              <button class="btn-primary" disabled>Disabled</button>
+            </div>
+          </div>
+
+          <div class="demo-area">
+            <div class="demo-title">Secondary Buttons</div>
+            <div class="button-group">
+              <button class="btn-secondary">Secondary Button</button>
+              <button class="btn-secondary btn-sm">Small</button>
+              <button class="btn-secondary btn-lg">Large</button>
+              <button class="btn-secondary" disabled>Disabled</button>
+            </div>
+          </div>
+
+          <div class="demo-area">
+            <div class="demo-title">Tertiary Buttons</div>
+            <div class="button-group">
+              <button class="btn-tertiary">Tertiary Link</button>
+              <button class="btn-tertiary">Another Link</button>
+              <button class="btn-tertiary" disabled>Disabled Link</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMS SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Form Elements</h3>
+          <p>Clean borders, clear focus states. Labels associated with inputs. Helpful error/success messages.</p>
+          
+          <div class="demo-area">
+            <div class="demo-title">Text Inputs</div>
+            <div class="form-group">
+              <label class="form-label required">Email Address</label>
+              <input type="email" placeholder="user@example.com">
+              <div class="form-help">We'll never share your email address.</div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">With Error</label>
+              <input type="text" class="has-error" value="Invalid input">
+              <div class="form-error">This value is not valid. Please check and try again.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">With Success</label>
+              <input type="text" class="has-success" value="Verified email">
+              <div class="form-success">Email verified successfully.</div>
+            </div>
+          </div>
+
+          <div class="demo-area">
+            <div class="demo-title">Select Dropdown</div>
+            <div class="form-group">
+              <label class="form-label">Choose an option</label>
+              <div class="select-wrapper">
+                <select>
+                  <option>Option 1</option>
+                  <option>Option 2</option>
+                  <option>Option 3</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="demo-area">
+            <div class="demo-title">Textarea</div>
+            <div class="form-group">
+              <label class="form-label">Message</label>
+              <textarea placeholder="Enter your message here..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARDS SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Cards</h3>
+          <p>White background, subtle border, generous padding. Clean typography hierarchy.</p>
+          
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <h4 class="card-title">Card with Header</h4>
+                <p class="card-subtitle">Subtitle explains context</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <p>This is a standard card component with a header section, body content, and footer actions. Cards use subtle borders and generous whitespace.</p>
+            </div>
+            <div class="card-footer">
+              <button class="btn-secondary btn-sm">Cancel</button>
+              <button class="btn-primary btn-sm">Continue</button>
+            </div>
+          </div>
+
+          <div class="card card-sm" style="margin-top: var(--space-md);">
+            <h4 class="card-title">Small Card</h4>
+            <p style="margin-top: var(--space-sm); color: var(--color-neutral-medium);">Compact version with less padding for dense layouts.</p>
+          </div>
+        </div>
+
+        <!-- ALERTS SECTION -->
+        <div class="reference-section">
+          <h3 class="reference-title">Alerts & Status</h3>
+          <p>Clear feedback. Never blame the user. Explain problem and suggest next steps.</p>
+          
+          <div class="alert alert-success" style="margin-bottom: var(--space-md);">
+            <strong>Success!</strong> Your changes have been saved successfully. You can now proceed to the next step.
+          </div>
+
+          <div class="alert alert-warning" style="margin-bottom: var(--space-md);">
+            <strong>Heads up!</strong> This action will be visible to your team. Double-check before continuing.
+          </div>
+
+          <div class="alert alert-error" style="margin-bottom: var(--space-md);">
+            <strong>Something went wrong.</strong> We couldn't process your request. Please check your email address and try again.
+          </div>
+
+          <div class="alert alert-info">
+            <strong>Note:</strong> This feature is in beta. We'd love your feedback on what works and what doesn't.
+          </div>
+
+          <h4 class="reference-subtitle" style="margin-top: var(--space-lg);">Badges</h4>
+          <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+            <span class="badge">Default Badge</span>
+            <span class="badge badge-primary">Primary Badge</span>
+            <span class="badge badge-success">Success Badge</span>
+            <span class="badge badge-warning">Warning Badge</span>
+            <span class="badge badge-error">Error Badge</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Secondary Panel -->
+      <div class="secondary-panel">
+        <div class="step-explanation">
+          <h4 class="step-title">Design Foundation</h4>
+          <p class="step-description">This reference page demonstrates all core design system elements. No product features have been implemented yet—only the professional design foundation.</p>
+        </div>
+
+        <div class="prompt-box">
+          <div class="prompt-label">Design Philosophy</div>
+          <div class="prompt-content">Calm
+Intentional
+Coherent
+Confident</div>
+          <button class="prompt-copy-btn">Copy</button>
+        </div>
+
+        <div class="step-explanation">
+          <h4 class="step-title">Color Constraint</h4>
+          <p class="step-description">Maximum 4 colors per screen. This ensures visual hierarchy and reduces cognitive load.</p>
+        </div>
+
+        <div class="secondary-actions">
+          <button class="btn-primary">Read Full Documentation</button>
+          <button class="btn-secondary">View CSS Variables</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof Footer -->
+    <div class="proof-footer">
+      <div class="proof-checklist">
+        <div class="proof-item done">
+          <span class="proof-checkbox">☑</span> Design System Built
+        </div>
+        <div class="proof-item done">
+          <span class="proof-checkbox">☑</span> Documentation Complete
+        </div>
+        <div class="proof-item done">
+          <span class="proof-checkbox">☑</span> Components Defined
+        </div>
+        <div class="proof-item">
+          <span class="proof-checkbox">☐</span> Product Features
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple copy button functionality
+    document.querySelectorAll('.prompt-copy-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const content = this.previousElementSibling.textContent;
+        navigator.clipboard.writeText(content).then(() => {
+          const original = this.textContent;
+          this.textContent = 'Copied!';
+          this.classList.add('copied');
+          setTimeout(() => {
+            this.textContent = original;
+            this.classList.remove('copied');
+          }, 2000);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
