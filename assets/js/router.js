@@ -6,9 +6,9 @@
 
 class Router {
   constructor() {
-    this.currentRoute = '/dashboard';
+    this.currentRoute = '/';
     this.routes = {
-      '/': this.renderDashboard,
+      '/': this.renderLanding,
       '/dashboard': this.renderDashboard,
       '/saved': this.renderSaved,
       '/digest': this.renderDigest,
@@ -54,7 +54,7 @@ class Router {
     }
 
     // Navigate to initial route
-    this.navigate(window.location.pathname || '/dashboard');
+    this.navigate(window.location.pathname || '/');
   }
 
   /**
@@ -126,7 +126,7 @@ class Router {
     // Add active class to current route link
     document.querySelectorAll('[data-route]').forEach((link) => {
       const href = link.getAttribute('href');
-      if (href === this.currentRoute || (this.currentRoute === '/' && href === '/dashboard')) {
+      if (href === this.currentRoute) {
         link.classList.add('active');
       }
     });
@@ -137,11 +137,23 @@ class Router {
    * Each method returns HTML content for that route
    */
 
+  renderLanding() {
+    return `
+      <div class="landing-page">
+        <div class="landing-container">
+          <h1 class="landing-headline">Stop Missing The Right Jobs.</h1>
+          <p class="landing-subtext">Precision-matched job discovery delivered daily at 9AM.</p>
+          <a href="/settings" class="btn-primary landing-cta" data-link>Start Tracking</a>
+        </div>
+      </div>
+    `;
+  }
+
   renderDashboard() {
     return `
       <div class="page-placeholder">
         <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtext">This section will be built in the next step.</p>
+        <p class="page-subtext">No jobs yet. In the next step, you will load a realistic dataset.</p>
       </div>
     `;
   }
@@ -150,7 +162,7 @@ class Router {
     return `
       <div class="page-placeholder">
         <h1 class="page-title">Saved Jobs</h1>
-        <p class="page-subtext">This section will be built in the next step.</p>
+        <p class="page-subtext">No saved jobs yet. When you find jobs that interest you, they will appear here.</p>
       </div>
     `;
   }
@@ -159,16 +171,67 @@ class Router {
     return `
       <div class="page-placeholder">
         <h1 class="page-title">Job Digest</h1>
-        <p class="page-subtext">This section will be built in the next step.</p>
+        <p class="page-subtext">Your daily job digest will be delivered at 9AM to your email. Set up your preferences to get started.</p>
       </div>
     `;
   }
 
   renderSettings() {
     return `
-      <div class="page-placeholder">
-        <h1 class="page-title">Settings</h1>
-        <p class="page-subtext">This section will be built in the next step.</p>
+      <div class="settings-page">
+        <h1 class="page-title">Preferences</h1>
+        <p class="page-subtext">Customize your job notification preferences. These settings will be saved for your daily digest.</p>
+        
+        <div class="settings-form">
+          <div class="form-group">
+            <label class="form-label required">Role Keywords</label>
+            <input type="text" placeholder="e.g., Product Manager, Designer, Engineer">
+            <div class="form-help">Separate multiple keywords with commas.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Preferred Locations</label>
+            <input type="text" placeholder="e.g., San Francisco, New York, Remote">
+            <div class="form-help">Enter cities or type "Remote" for remote positions.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Work Mode</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="workmode" value="remote">
+                <span>Remote</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="workmode" value="hybrid">
+                <span>Hybrid</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="workmode" value="onsite">
+                <span>Onsite</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">Experience Level</label>
+            <div class="select-wrapper">
+              <select>
+                <option value="">Select an option</option>
+                <option value="entry">Entry Level (0-2 years)</option>
+                <option value="mid">Mid Level (2-5 years)</option>
+                <option value="senior">Senior (5+ years)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button class="btn-secondary" disabled>Reset</button>
+            <button class="btn-primary" disabled>Save Preferences</button>
+          </div>
+
+          <p class="settings-notice">Preferences placeholder. Functionality coming in next step.</p>
+        </div>
       </div>
     `;
   }
